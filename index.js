@@ -22,6 +22,18 @@ app.post('/register',async(req,res) => {
   res.send(result)
 })
 
+app.post('/login',async(req,res) => {
+  //username:req.body.username
+  //password:req.body.password
+
+  //Step 1: Check username if exists
+  let result = await client.db('classCRUD').collection('user').findOne({
+    username: req.body.username
+  })
+  console.log(result)
+
+})
+
 //get user profile
 app.get('/readprofile/:id/:email',async(req,res) => {
   //findOne
