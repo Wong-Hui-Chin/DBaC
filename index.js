@@ -30,6 +30,17 @@ app.post('/login',async(req,res) => {
   let result = await client.db('classCRUD').collection('user').findOne({
     username: req.body.username
   })
+  if (!result) {
+    res.send('Username not found')
+  } else {
+    //Step 2: Check if password is correct
+    if(bcrypt.compareSync(req.body.password, result.password) == true){
+      res.send('Login successfully')
+    } else {
+      res.send('Wrong password')
+    }
+    
+  }
   console.log(result)
 
 })
