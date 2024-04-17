@@ -2,19 +2,19 @@ const express = require('express')
 const app = express()
 const port = process.env.PORT || 3000;
 
-const bcrypt = require('bcrypt');
+//const bcrypt = require('bcrypt');
 app.use(express.json())
 
 //new user registration
 app.post('/register',async(req,res) => {
   //console.log(req.body)
   //insertOne
-  const hash = bcrypt.hashSync(req.body.password, 10);
+  //const hash = bcrypt.hashSync(req.body.password, 10);
 
  let result = await client.db('classCRUD').collection('user').insertOne(
     {
       username: req.body.username,
-      password: hash,//mi ma bian luan ma
+      password: req.body.password,//hash,//mi ma bian luan ma
       name: req.body.name,
       email: req.body.email
     }
