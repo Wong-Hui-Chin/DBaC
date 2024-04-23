@@ -30,6 +30,9 @@ app.post('/login',async(req,res) => {
   let result = await client.db('classCRUD').collection('user').findOne({
     username: req.body.username
   })
+  // if (result){
+  //   res.status(400).send('Username already exists')
+  //}
   if (!result) {
     res.send('Username not found')
   } else {
@@ -46,25 +49,49 @@ app.post('/login',async(req,res) => {
 })
 
 //get user profile
-app.get('/readprofile/:id/:email',async(req,res) => {
+app.get('/readprofile/:id',async(req,res) => {
   //findOne
   let result = await client.db('classCRUD').collection('user').findOne({
-    username: req.params.id,
-    email: req.params.email
+    _id: new ObjectId(req.params.id)
   })
   res.send(result)
 })
 
+/*
+app.get('/readprofile/:name',async(req,res) => {
+  //findOne
+  let result = await client.db('classCRUD').collection('user').findOne({
+    _username: req.params.name
+    //email: req.params.email
+  })
+  res.send(result)
+})*/
+
 //update user account
-app.patch('/updateaccount',(req,res) => {
+app.patch('/updateaccount/:id',async(req,res) => {
   //updateOne
-  console.log('update user profile')
+  let result = await client.db('classCRUD').collection('user').updateOne(
+    {
+      _id: new ObjectId(req.params.id)
+    },
+    {
+      $set: {
+        name: req.body.name
+      }
+    }
+  )
+  res.send(result)
 })
 
 //delete user account
-app.delete('/deleteaccount',(req,res) => {
+app.delete('/deleteaccount/:id',async(req,res) => {
   //deleteOne
-  console.log('delete user profile')
+  let result = await client.db('classCRUD').collection('user').deleteOne(
+    {
+      _id: new ObjectId(req.params.id)
+    }
+  )
+  res.send(result)
 })
 
 app.get('/')
