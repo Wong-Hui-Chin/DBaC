@@ -99,7 +99,7 @@ app.get('/')
 app.listen(port, () => {
    console.log(`Example app listening on port ${port}`)
 })
-
+//connect to MongoDB
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = "mongodb+srv://Wong_Hui_Chin:Y0304h1023@cluster0.ucgr9bl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
