@@ -101,6 +101,14 @@ app.delete('/deleteaccount/:id',async(req,res) => {
   res.send(result)
 })
 
+app.post('/buy',async(req,res) => {
+  const token = req.headers.authorization.split(" ")[1]
+
+  var decoded = jwt.verify(token, 'mysecretpasskey');
+  console.log(decoded) // bar
+})
+
+
 app.get('/')
 
 app.listen(port, () => {
