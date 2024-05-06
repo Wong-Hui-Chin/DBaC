@@ -38,9 +38,14 @@ app.post('/login',async(req,res) => {
   } else {
     //Step 2: Check if password is correct
     if(bcrypt.compareSync(req.body.password, result.password) == true){
-      res.send('Login successfully')
+      var token = jwt.sign({
+        _id: result._id,
+        username: result.username
+        }, 'mysecretpasskey',{ expiresIn: 10 * 60 });// set the time for the token to expire
+      res.send(token)
     } else {
-      res.send('Wrong password')
+      // password incorrect
+      res.status(401).send('Wrong password')
     }
     
   }
