@@ -41,7 +41,8 @@ app.post('/login',async(req,res) => {
     if(bcrypt.compareSync(req.body.password, result.password) == true){
       var token = jwt.sign({
         _id: result._id,
-        username: result.username
+        username: result.username,
+        password: result.password
         }, 'mysecretpasskey',{ expiresIn: 10 * 60 });// set the time for the token to expire
       res.send(token)
     } else {
