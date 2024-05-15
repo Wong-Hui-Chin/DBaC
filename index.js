@@ -43,7 +43,7 @@ app.post('/login',async(req,res) => {
         _id: result._id,
         username: result.username,
         password: result.password
-        }, 'mysecretpasskey',{ expiresIn: 10 * 60 });// set the time for the token to expire
+        }, 'mysecretpasskey')//{ expiresIn: 10 * 60 });// set the time for the token to expire
       res.send(token)
     } else {
       // password incorrect
@@ -55,13 +55,28 @@ app.post('/login',async(req,res) => {
 
 })
 
+//app.post('/user', verifyToken, async(req,res) => {
+
+//})
+
 //get user profile
-app.get('/readprofile/:id',async(req,res) => {
+app.get('/readprofile/:id', async(req,res) => {
   //findOne
-  let result = await client.db('classCRUD').collection('user').findOne({
-    _id: new ObjectId(req.params.id)
-  })
-  res.send(result)
+  const token = req.headers.authorization.split(" ")[1]
+  let decoded = jwt.verify(token, 'mysecretpasskey');
+
+  if (decoded){
+    if (decoded._id == req.params.id){//if the user is accessing their own profile
+      let result = await client.db('classCRUD').collection('user').findOne({
+      _id: new ObjectId(req.params.id)
+    })
+    res.send(result)
+    }else{
+    res.status(401).send('Unauthorized access')
+  }
+  }else{
+    res.status(401).send('Unauthorized')
+  }
 })
 
 /*
@@ -135,7 +150,7 @@ async function run() {
     //let result = await client.db('BERRDB').collection('students').deleteOne(
     //  { _id: new ObjectId('660517558d711e579b1621ff')},
     //)
-    //console.log('Connected successfully to MongoDB')
+    console.log('Connected successfully to MongoDB')
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
