@@ -1,20 +1,18 @@
-
 const bcrypt = require('bcrypt');
-const express = require('express')
-const app = express()
+const express = require('express');
+const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(express.json())
+app.use(express.json());
 app.use(express.static('public'));
 
 //e.g using for registration
-
-app.post('/register',async(req,res) => {
-  let existing = await client.db("Assignment").collection("users").findOne({
-    name: req.body.username
-  }) || await client.db("Assignment").collection("users").findOne({
-    email: req.body.email
-  });
+app.post('/register', async(req,res) => {
+  let existing = (await client.db("Assignment").collection("users").findOne({
+    name: req.body.username,
+  })) || (await client.db("Assignment").collection("users").findOne({
+    email: req.body.email,
+  }));
 
   if (existing) {
     res.status(400).send("username or email already exist")
@@ -327,7 +325,7 @@ app.post('/sendfriendrequest/:username', async(req, res) => {
   }
 })
 
-app.post('/respondtofriendrequest/:username', async(req, res) => {
+app.patch('/respondtofriendrequest/:username', async(req, res) => {
   const friend = req.body.friend;
   const action = req.body.action; // 'accept' or 'reject'
 
@@ -388,7 +386,7 @@ app.post('/respondtofriendrequest/:username', async(req, res) => {
 })
 
 //forgot password and update password
-app.post('/forgotpassword/:username', async(req, res) => {
+app.patch('/forgotpassword/:username', async(req, res) => {
   const newpassword = req.body.newpassword;
 
   let existing = await client.db("Assignment").collection("users").findOne({
