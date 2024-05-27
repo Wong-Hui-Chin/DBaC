@@ -709,6 +709,62 @@ app.post('/battle/:fightId', async(req, res) => {
   }
 })
 
+//function to calculate characters health after being attacked by opponent's characters
+function calculateHealth(character, opponent) {
+  const damage = opponent.attack - character.defense;
+  return character.health - damage;
+}
+
+//battle between 2 users to decide who wins
+app.patch('/battle/:username1/:username2', async(req, res) => {
+  try {
+    const user1 = await client.db("Assignment").collection("users").findOne({
+      name: req.params.username1
+    });
+
+    const user2 = await client.db("Assignment").collection("users").findOne({
+      name: req.params.username2
+    });
+
+    if (!user1 || !user2) {
+      return res.status(400).send('User not found');
+    }
+
+    const user1Characters = await client.db("Assignment").collection("characters").find({
+      _id: { $in: user1.characters }
+    }).toArray();
+
+    const user2Characters = await client.db("Assignment").collection("characters").find({
+      _id: { $in: user2.characters }
+    }).toArray();
+
+    let user1Health = 0;
+    let user2Health = 0;
+
+    for (let i = 0; i < 5; i++) {
+      user1Health += calculateHealth(user1Characters[i], user2Characters[i]);
+      user2Health += calculateHealth(user2Characters[i], user1Characters[i]);
+    }
+
+    let winner, loser;
+    if (user1Health > user2Health) {
+      winner = user1._id;
+      loser = user2._id;
+    } else {
+      winner = user2._id;
+      loser = user1._id;
+    }
+
+    await client.db("Assignment").collection("users").updateOne({ _id: winner }, { $inc: { money: 1000 } });
+    await client.db("Assignment").collection("users").updateOne({ _id: loser }, { $inc: { money: 200 } });
+
+    res.send(`Battle completed. Winner: ${winner}`);
+  } catch (error) {
+    res.status(500).send('Server error');
+  }
+})
+
+
 /*
 app.patch('/battle/:name1/:name2',async(req,res) => {
     let user1 = await client.db("Assignment").collection("users").findOne({
