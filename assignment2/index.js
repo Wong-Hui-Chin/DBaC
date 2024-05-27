@@ -20,15 +20,8 @@ app.post("/register", async (req, res) => {
     res.status(400).send("username or email already exist");
   } else {
     const hash = bcrypt.hashSync(req.body.password, 10);
-    let count = await client
-      .db("Assignment")
-      .collection("players")
-      .countDocuments();
-    let resq = await client
-      .db("Assignment")
-      .collection("players")
-      .insertOne({
-        name: req.body.name,
+    let count = await client.db("Assignment").collection("players").countDocuments();
+    let resq = await client.db("Assignment").collection("players").insertOne({
         player_id: count,
         password: hash,
         email: req.body.email,
@@ -54,10 +47,7 @@ app.patch("/login/starterpack/:numId", async (req, res) => {
   const min = 1000;
   const max = 2000;
   const newMoneyAmount = Math.floor(Math.random() * (max - min + 1)) + min;
-  let user = await client
-    .db("Assignment")
-    .collection("players")
-    .findOneAndUpdate(
+  let user = await client.db("Assignment").collection("players").findOneAndUpdate(
       {
         $and: [
           {
@@ -94,19 +84,13 @@ app.post("/chest", async (req, res) => {
 });
 //in function of adding character
 app.post("/character", async (req, res) => {
-  let existing = await client
-    .db("Assignment")
-    .collection("characters")
-    .findOne({
+  let existing = await client.db("Assignment").collection("characters").findOne({
       name: req.body.character_name,
     });
   if (existing) {
     res.status(400).send("Character already exist");
   } else {
-    let character = await client
-      .db("Assignment")
-      .collection("characters")
-      .insertOne({
+    let character = await client.db("Assignment").collection("characters").insertOne({
         name: req.body.character_name,
         health: req.body.health,
         attack: req.body.attack,
@@ -118,10 +102,7 @@ app.post("/character", async (req, res) => {
 });
 
 app.post("/login", async (req, res) => {
-  let resp = await client
-    .db("Assignment")
-    .collection("players")
-    .findOne({
+  let resp = await client.db("Assignment").collection("players").findOne({
       name:
         req.body.username ||
         (await client.db("Assignment").collection("players").findOne({
@@ -146,10 +127,7 @@ app.post("/login", async (req, res) => {
 
 //get read user profile
 app.get("/read/:player_id", async (req, res) => {
-  let document = await client
-    .db("Assignment")
-    .collection("players")
-    .aggregate([
+  let document = await client.db("Assignment").collection("players").aggregate([
       {
         $match: { player_id: parseInt(req.params.player_id) },
       },
@@ -197,12 +175,8 @@ app.get("/read/:player_id", async (req, res) => {
 
 //put point
 app.get("/leaderboard", async (req, res) => {
-  let leaderboard = await client
-    .db("Assignment")
-    .collection("players")
-    .find()
-    .sort({
-      PlayerPowerLevel: -1,
+  let leaderboard = await client.db("Assignment").collection("players").find().sort({
+      points: -1,
     })
     .toArray();
 
@@ -212,17 +186,11 @@ app.get("/leaderboard", async (req, res) => {
 app.patch("/add_character_to_chest/:chestId", async (req, res) => {
   const Character = req.body.character_name;
 
-  const existingChest = await client
-    .db("Assignment")
-    .collection("chests")
-    .findOne({
+  const existingChest = await client.db("Assignment").collection("chests").findOne({
       _id: new ObjectId(req.params.chestId),
     });
 
-  const existingCharacter = await client
-    .db("Assignment")
-    .collection("characters")
-    .findOne({
+  const existingCharacter = await client.db("Assignment").collection("characters").findOne({
       name: Character,
     });
 
@@ -233,10 +201,7 @@ app.patch("/add_character_to_chest/:chestId", async (req, res) => {
       let character_power_level = 0;
 
       for (const character of Character) {
-        let individual_character_power = await client
-          .db("Assignment")
-          .collection("characters")
-          .findOne({
+        let individual_character_power = await client.db("Assignment").collection("characters").findOne({
             name: character,
           });
         character_power_level += individual_character_power.character_power;
@@ -247,10 +212,7 @@ app.patch("/add_character_to_chest/:chestId", async (req, res) => {
           character_power_level + existingChest.total_power_level;
       }
 
-      let chest = await client
-        .db("Assignment")
-        .collection("chests")
-        .updateOne(
+      let chest = await client.db("Assignment").collection("chests").updateOne(
           {
             _id: new ObjectId(req.params.chestId),
           },
@@ -272,18 +234,12 @@ app.patch("/add_character_to_chest/:chestId", async (req, res) => {
       res.status(400).send("Chest or Character does not exist");
     } else {
       let character_power_level = 0;
-      let individual_character_power = await client
-        .db("Assignment")
-        .collection("characters")
-        .findOne({
+      let individual_character_power = await client.db("Assignment").collection("characters").findOne({
           name: req.body.character_name,
         });
       character_power_level += individual_character_power.character_power;
 
-      let chest = await client
-        .db("Assignment")
-        .collection("chests")
-        .updateOne(
+      let chest = await client.db("Assignment").collection("chests").updateOne(
           {
             _id: new ObjectId(req.params.chestId),
           },
@@ -303,19 +259,13 @@ app.patch("/add_character_to_chest/:chestId", async (req, res) => {
 });
 //need Developer token
 app.patch("/characterupdate/:charactername", async (req, res) => {
-  let existing = await client
-    .db("Assignment")
-    .collection("characters")
-    .findOne({
+  let existing = await client.db("Assignment").collection("characters").findOne({
       name: req.params.charactername,
     });
   if (!existing) {
     res.status(400).send("Character does not exist");
   } else {
-    let character = await client
-      .db("Assignment")
-      .collection("characters")
-      .updateOne(
+    let character = await client.db("Assignment").collection("characters").updateOne(
         {
           name: req.params.charactername,
         },
@@ -340,15 +290,13 @@ app.post("/send_friend_request/:requesterId/:requestedId", async (req, res) => {
     return res.status(400).send("You cannot send a friend request to yourself");
   }
   // Check if both players exist
-  const requester = await client
-    .db("Assignment")
-    .collection("players")
-    .findOne({ player_id: parseInt(req.params.requesterId) });
+  const requester = await client.db("Assignment").collection("players").findOne({ 
+    player_id: parseInt(req.params.requesterId) 
+    });
 
-  const requested = await client
-    .db("Assignment")
-    .collection("players")
-    .findOne({ player_id: parseInt(req.params.requestedId) });
+  const requested = await client.db("Assignment").collection("players").findOne({ 
+    player_id: parseInt(req.params.requestedId) 
+    });
 
   if (!requester || !requested) {
     return res.status(404).send("Either players not found");
@@ -364,17 +312,11 @@ app.post("/send_friend_request/:requesterId/:requestedId", async (req, res) => {
     return res.status(400).send("Friend request already sent");
   }
   // Send the friend request
-  const sent = await client
-    .db("Assignment")
-    .collection("players")
-    .updateOne(
+  const sent = await client.db("Assignment").collection("players").updateOne(
       { player_id: parseInt(req.params.requesterId) },
       { $push: { "friends.sentRequests": parseInt(req.params.requestedId) } }
     );
-  const sent2 = await client
-    .db("Assignment")
-    .collection("players")
-    .updateOne(
+  const sent2 = await client.db("Assignment").collection("players").updateOne(
       { player_id: parseInt(req.params.requestedId) },
       {
         $push: {
@@ -395,29 +337,18 @@ app.patch(
   async (req, res) => {
     // Check if requesterId and requestedId are different
     if (parseInt(req.params.requesterId) === parseInt(req.params.requestedId)) {
-      return res
-        .status(400)
-        .send("You cannot accept a friend request from yourself");
+      return res.status(400).send("You cannot accept a friend request from yourself");
     }
     // Check if both players exist
-    const requester = await client
-      .db("Assignment")
-      .collection("players")
-      .findOne({ player_id: parseInt(req.params.requesterId) });
+    const requester = await client.db("Assignment").collection("players").findOne({ player_id: parseInt(req.params.requesterId) });
 
-    const requested = await client
-      .db("Assignment")
-      .collection("players")
-      .findOne({ player_id: parseInt(req.params.requestedId) });
+    const requested = await client.db("Assignment").collection("players").findOne({ player_id: parseInt(req.params.requestedId) });
 
     if (!requester || !requested) {
       return res.status(404).send("Either players not found");
     }
     // Move the friend request from needAcceptRequests to friends
-    const accept = await client
-      .db("Assignment")
-      .collection("players")
-      .updateOne(
+    const accept = await client.db("Assignment").collection("players").updateOne(
         {
           player_id: parseInt(req.params.requestedId),
           "friends.needAcceptRequests": parseInt(req.params.requesterId),
@@ -430,10 +361,7 @@ app.patch(
         }
       );
     console.log(accept);
-    const accept2 = await client
-      .db("Assignment")
-      .collection("players")
-      .updateOne(
+    const accept2 = await client.db("Assignment").collection("players").updateOne(
         {
           player_id: parseInt(req.params.requesterId),
           "friends.sentRequests": parseInt(req.params.requestedId),
@@ -458,32 +386,20 @@ app.patch("/remove_friend/:requesterId/:friendId", async (req, res) => {
     return res.status(400).send("You cannot remove yourself");
   }
   // Check if both players exist
-  const requester = await client
-    .db("Assignment")
-    .collection("players")
-    .findOne({ player_id: parseInt(req.params.requesterId) });
+  const requester = await client.db("Assignment").collection("players").findOne({ player_id: parseInt(req.params.requesterId) });
 
-  const friend = await client
-    .db("Assignment")
-    .collection("players")
-    .findOne({ player_id: parseInt(req.params.friendId) });
+  const friend = await client.db("Assignment").collection("players").findOne({ player_id: parseInt(req.params.friendId) });
 
   if (!requester || !friend) {
     return res.status(404).send("Either players not found");
   }
   // Remove the friend from the friendList of the requester
-  const remove1 = await client
-    .db("Assignment")
-    .collection("players")
-    .updateOne(
+  const remove1 = await client.db("Assignment").collection("players").updateOne(
       { player_id: parseInt(req.params.requesterId) },
       { $pull: { "friends.friendList": parseInt(req.params.friendId) } }
     );
   // Remove the requester from the friendList of the friend
-  const remove2 = await client
-    .db("Assignment")
-    .collection("players")
-    .updateOne(
+  const remove2 = await client.db("Assignment").collection("players").updateOne(
       { player_id: parseInt(req.params.friendId) },
       { $pull: { "friends.friendList": parseInt(req.params.requesterId) } }
     );
@@ -495,10 +411,7 @@ app.patch("/remove_friend/:requesterId/:friendId", async (req, res) => {
 });
 
 app.patch("/update/:id", async (req, res) => {
-  let require = await client
-    .db("Assignment")
-    .collection("players")
-    .updateOne(
+  let require = await client.db("Assignment").collection("players").updateOne(
       {
         _id: new ObjectId(req.params.id),
       },
@@ -516,20 +429,15 @@ app.patch("/update/:id", async (req, res) => {
 });
 
 app.get("/chests", async (req, res) => {
-  const chests = await client
-    .db("Assignment")
-    .collection("chests")
-    .aggregate([{ $project: { _id: 0, chest: 1, price: 1, characters: 1 } }])
+  const chests = await client.db("Assignment").collection("chests")
+  .aggregate([{ $project: { _id: 0, chest: 1, price: 1, characters: 1 } }])
     .toArray();
 
   res.send(chests);
 });
 
 app.patch("/buying_chest", async (req, res) => {
-  let userVerify = await client
-    .db("Assignment")
-    .collection("players")
-    .findOne({
+  let userVerify = await client.db("Assignment").collection("players").findOne({
       $and: [{ name: req.body.name }, { email: req.body.email }],
     });
 
@@ -547,10 +455,7 @@ app.patch("/buying_chest", async (req, res) => {
   } else {
     if (chest) {
       // Check if the player has enough money
-      let user = await client
-        .db("Assignment")
-        .collection("players")
-        .findOne({
+      let user = await client.db("Assignment").collection("players").findOne({
           $or: [{ name: req.body.name }, { email: req.body.email }],
         });
 
@@ -558,10 +463,7 @@ app.patch("/buying_chest", async (req, res) => {
         res.send("Not enough money to buy a character");
       } else {
         // Randomly select a character from the characters array
-        let character = await client
-          .db("Assignment")
-          .collection("chests")
-          .aggregate([
+        let character = await client.db("Assignment").collection("chests").aggregate([
             { $match: { chest: req.body.chest } },
             { $unwind: "$characters" },
             { $sample: { size: 1 } },
@@ -570,10 +472,7 @@ app.patch("/buying_chest", async (req, res) => {
 
         // If a character was selected, add it to the user's collection
         if (character.length > 0) {
-          let buying = await client
-            .db("Assignment")
-            .collection("players")
-            .updateOne(
+          let buying = await client.db("Assignment").collection("players").updateOne(
               {
                 $or: [{ name: req.body.name }, { email: req.body.email }],
               },
@@ -598,10 +497,7 @@ app.patch("/buying_chest", async (req, res) => {
 });
 
 app.get("/battle/:id", async (req, res) => {
-  const name = await client
-    .db("Assignment")
-    .collection("players")
-    .aggregate([
+  const name = await client.db("Assignment").collection("players").aggregate([
       {
         $match: { name: req.params.selectName },
       },
@@ -626,23 +522,14 @@ app.get("/battle/:id", async (req, res) => {
 
 app.post("/battle/:attackerId:/:defenderId", async (req, res) => {
   // Get the attacker and defender from the database
-  const attacker = await client
-    .db("Game")
-    .collection("Players")
-    .findOne({ player_id: parseInt(req.params.attackerId) });
-  const defender = await client
-    .db("Game")
-    .collection("Players")
-    .findOne({ player_id: parseInt(req.params.defenderId) });
+  const attacker = await client.db("Game").collection("Players").findOne({ player_id: parseInt(req.params.attackerId) });
+  const defender = await client.db("Game").collection("Players").findOne({ player_id: parseInt(req.params.defenderId) });
 
   // Calculate the new health of the defender
   const newHealth = defender.health - attacker.attackPower;
 
   // Update the defender's health in the database
-  await client
-    .db("Game")
-    .collection("Players")
-    .updateOne({ name: defenderName }, { $set: { health: newHealth } });
+  await client.db("Game").collection("Players").updateOne({ name: defenderName }, { $set: { health: newHealth } });
 
   // If the defender's new health is less than or equal to 0, they lost the battle
   if (newHealth <= 0) {
@@ -734,10 +621,7 @@ app.post("/battle/:attackerId:/:defenderId", async (req, res) => {
 //delete user profile
 
 app.delete("/delete/:id", async (req, res) => {
-  let delete_req = await client
-    .db("Assignment")
-    .collection("users")
-    .deleteOne({
+  let delete_req = await client.db("Assignment").collection("users").deleteOne({
       _id: new ObjectId(req.params.id),
     });
   res.send(delete_req);

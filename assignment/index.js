@@ -10,28 +10,35 @@ app.use(express.static('public'));
 //e.g using for registration
 
 app.post('/register',async(req,res) => {
-    let existing = await client.db("Assignment").collection("users").findOne({
-      name: req.body.username
+  let existing = await client.db("Assignment").collection("users").findOne({
+    name: req.body.username
   }) || await client.db("Assignment").collection("users").findOne({
-      email: req.body.email
+    email: req.body.email
   });
 
-    if (existing) {
-      res.status(400).send("username or email already exist")
-    } else {
-      const hash = bcrypt.hashSync(req.body.password, 10);
-  
+  if (existing) {
+    res.status(400).send("username or email already exist")
+  } else {
+    const hash = bcrypt.hashSync(req.body.password, 10);
+    let count = await client.db("Assignment").collection("users").countDocuments();
     let resq = await client.db("Assignment").collection("users").insertOne({
-          name: req.body.username,
-          password: hash,
-          email: req.body.email,
-          gender: req.body.gender
-      });
-      res.send(resq);
+        name: req.body.name,
+        player_id: count,
+        password: hash,
+        email: req.body.email,
+        gender: req.body.gender,
+        collection: [],
+        money: 0,
+        points: 0,
+        achievements: ["Welcome warrior!"],
+        friends: { friendList: [], sentRequests: [], needAcceptRequests: [] },
+        starterPackRetrieved: false,
+    });
+    res.send({message:"User registered successfully! Start your battle journey!",resq});
     }
 })
 
-app.post('/register/starterpack/:username', async(req, res) => {
+app.patch('/register/starterpack/:username', async(req, res) => {
   let user = await client.db("Assignment").collection("users").findOne({
     name: req.params.username
   });
@@ -44,7 +51,7 @@ app.post('/register/starterpack/:username', async(req, res) => {
         name: req.params.username
       },{
         $set:{
-          PlayerPowerLevel: 1000,
+          characters: "Darius",
           money: 1000,
           starterPackRetrieved: true
         }
@@ -95,7 +102,9 @@ app.post('/chest' ,async(req,res) => {
   } else {
     let chest = await client.db("Assignment").collection("chests").insertOne({
       chest: req.body.chest_name,
-      price: req.body.price
+      price: req.body.price,
+      characters: [],
+      Max_power_level: req.body.Max_power_level
     });
     res.send(chest);
     }
@@ -114,8 +123,7 @@ app.post('/character' ,async(req,res) => {
       health: req.body.health,
       attack: req.body.attack,
       defense: req.body.defense,
-      type: req.body.type,
-      character_power: req.body.character_power
+      type: req.body.type
     });
     res.send(character);
     }
