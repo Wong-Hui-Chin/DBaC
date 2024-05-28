@@ -632,137 +632,181 @@ app.patch('/money_generator/:username',async(req,res) => {
 })
 
 //select 5 characters to battle
-app.post('/battle/choosecharacter', async(req,res)=>{
-  try {
-    const characterIds = req.body.characterIds;
+// app.post('/battle/choosecharacter', async(req,res)=>{
+//   try {
+//     const characterIds = req.body.characterIds;
 
-    if (!Array.isArray(characterIds) || characterIds.length !== 5) {
-      return res.status(400).send('Exactly 5 characters must be selected');
-    }
+//     if (!Array.isArray(characterIds) || characterIds.length !== 5) {
+//       return res.status(400).send('Exactly 5 characters must be selected');
+//     }
 
-    const characters = await client.db("Assignment").collection("characters").find({
-      _id: { $in: characterIds }
-    }).toArray();
+//     const characters = await client.db("Assignment").collection("characters").find({
+//       _id: { $in: characterIds }
+//     }).toArray();
 
-    if (characters.length !== 5) {
-      return res.status(400).send('One or more selected characters do not exist');
-    }
+//     if (characters.length !== 5) {
+//       return res.status(400).send('One or more selected characters do not exist');
+//     }
 
-    // Save the selected characters for the fight
-    // This could be saved in a "fights" collection in the database
-    const fightId = await client.db("Assignment").collection("fights").insertOne({
-      characters: characterIds,
-      status: 'pending'
-    });
+//     // Save the selected characters for the fight
+//     // This could be saved in a "fights" collection in the database
+//     const fightId = await client.db("Assignment").collection("fights").insertOne({
+//       characters: characterIds,
+//       status: 'pending'
+//     });
 
-    res.send(`Fight created with ID: ${fightId}`);
-  } catch (error) {
-    res.status(500).send('Server error');
+//     res.send(`Fight created with ID: ${fightId}`);
+//   } catch (error) {
+//     res.status(500).send('Server error');
+//   }
+// })
+
+//choose one character to battle
+app.post('/battle/choosecharacter', async(req, res) => {
+  const characterId = req.body.characterId;
+
+  // Validate characterId
+  if (!characterId) {
+    return res.status(400).send("characterId is required");
   }
+
+  // Fetch the character from the database
+  const character = await client.db("Assignment").collection("characters").findOne({ id: characterId });
+
+  // Check if the character exists
+  if (!character) {
+    return res.status(404).send("Character not found");
+  }
+
+  // Check if the character is available for battle
+  if (!character.isAvailable) {
+    return res.status(400).send("Character is not available for battle");
+  }
+
+  // If everything is okay, proceed with the battle setup
+  // This could involve adding the character to a "currentBattle" collection in your database,
+  // or updating the character's status to "inBattle", etc.
+
+  res.send({ message: "Character chosen successfully!", character });
+});
+
+//battle history
+app.get('/battlehistory/:username',async(req,res) => {
+  let battle_history = await client.db("Assignment").collection("battles").find({
+    $or: [
+      { user1: req.params.username },
+      { user2: req.params.username }
+    ]
+  }).toArray();
+
+  res.send(battle_history);
 })
 
-app.post('/battle/:fightId', async(req, res) => {
-  try {
-    const fight = await client.db("Assignment").collection("fights").findOne({
-      _id: req.params.fightId
-    });
-
-    if (!fight || fight.status !== 'pending') {
-      return res.status(400).send('Fight not found or already completed');
-    }
-
-    const characters = await client.db("Assignment").collection("characters").find({
-      _id: { $in: fight.characters }
-    }).toArray();
-
-    const userCharacters = characters.slice(0, 5);
-    const opponentCharacters = characters.slice(5, 10);
-
-    let userWins = 0;
-    let opponentWins = 0;
-
-    for (let i = 0; i < 5; i++) {
-      if (userCharacters[i].attack > opponentCharacters[i].attack) {
-        userWins++;
-      } else {
-        opponentWins++;
-      }
-    }
-
-    let winner, loser;
-    if (userWins >= 3) {
-      winner = userCharacters[0].userId;
-      loser = opponentCharacters[0].userId;
-    } else {
-      winner = opponentCharacters[0].userId;
-      loser = userCharacters[0].userId;
-    }
-
-    await client.db("Assignment").collection("users").updateOne({ _id: winner }, { $inc: { money: 1000 } });
-    await client.db("Assignment").collection("users").updateOne({ _id: loser }, { $inc: { money: 200 } });
-
-    await client.db("Assignment").collection("fights").updateOne({ _id: req.params.fightId }, { $set: { status: 'completed' } });
-
-    res.send(`Battle completed. Winner: ${winner}`);
-  } catch (error) {
-    res.status(500).send('Server error');
-  }
-})
-
-//function to calculate characters health after being attacked by opponent's characters
 function calculateHealth(character, opponent) {
-  const damage = opponent.attack - character.defense;
+  const damage = (opponent.attack*opponent.speed) * (1-(character.defense/(character.defense+100)));
   return character.health - damage;
 }
 
-//battle between 2 users to decide who wins
-app.patch('/battle/:username1/:username2', async(req, res) => {
-  try {
-    const user1 = await client.db("Assignment").collection("users").findOne({
-      name: req.params.username1
-    });
+//battle between 2 users to decide who wins, the winner will get 1000 money and the loser will get 200 money
+//the loser is the one whose health become 0 first
+app.patch('/battle/:user1/:user2', async(req, res) => {
+  let user1 = await client.db("Assignment").collection("users").findOne({
+    name: req.params.user1
+  });
+  let user2 = await client.db("Assignment").collection("users").findOne({
+    name: req.params.user2
+  });
 
-    const user2 = await client.db("Assignment").collection("users").findOne({
-      name: req.params.username2
-    });
-
-    if (!user1 || !user2) {
-      return res.status(400).send('User not found');
-    }
-
-    const user1Characters = await client.db("Assignment").collection("characters").find({
-      _id: { $in: user1.characters }
-    }).toArray();
-
-    const user2Characters = await client.db("Assignment").collection("characters").find({
-      _id: { $in: user2.characters }
-    }).toArray();
-
-    let user1Health = 0;
-    let user2Health = 0;
-
-    for (let i = 0; i < 5; i++) {
-      user1Health += calculateHealth(user1Characters[i], user2Characters[i]);
-      user2Health += calculateHealth(user2Characters[i], user1Characters[i]);
-    }
-
-    let winner, loser;
-    if (user1Health > user2Health) {
-      winner = user1._id;
-      loser = user2._id;
-    } else {
-      winner = user2._id;
-      loser = user1._id;
-    }
-
-    await client.db("Assignment").collection("users").updateOne({ _id: winner }, { $inc: { money: 1000 } });
-    await client.db("Assignment").collection("users").updateOne({ _id: loser }, { $inc: { money: 200 } });
-
-    res.send(`Battle completed. Winner: ${winner}`);
-  } catch (error) {
-    res.status(500).send('Server error');
+  // Check if both users exist
+  if (!user1 || !user2) {
+    return res.status(404).send("User not found");
   }
-})
+
+  // Initialize turn counts
+  let user1Turns = 0;
+  let user2Turns = 0;
+
+  // Battle loop
+  while (user1.health > 0 && user2.health > 0) {
+    // Calculate the health for both users after the attack
+    user1.health = calculateHealth(user1, user2);
+    user2.health = calculateHealth(user2, user1);
+
+    // Increment turn counts
+    user1Turns++;
+    user2Turns++;
+  }
+
+  // Determine the winner and the loser based on who reached 0 health first
+  let winner = (user1.health > 0) ? user1 : user2;
+  let loser = (user1.health > 0) ? user2 : user1;
+
+  // Update the users' money
+  winner.money += 1000;
+  loser.money += 200;
+
+  // Update the users in the database
+  await client.db("Assignment").collection("users").updateOne({ name: winner.name }, { $set: { money: winner.money } });
+  await client.db("Assignment").collection("users").updateOne({ name: loser.name }, { $set: { money: loser.money } });
+
+  res.send({ message: `${winner.name} has won the battle in ${winner === user1 ? user1Turns : user2Turns} turns!`, winner, loser });
+});
+
+
+
+// app.post('/battle/:fightId', async(req, res) => {
+//   try {
+//     const fight = await client.db("Assignment").collection("fights").findOne({
+//       _id: req.params.fightId
+//     });
+
+//     if (!fight || fight.status !== 'pending') {
+//       return res.status(400).send('Fight not found or already completed');
+//     }
+
+//     const characters = await client.db("Assignment").collection("characters").find({
+//       _id: { $in: fight.characters }
+//     }).toArray();
+
+//     const userCharacters = characters.slice(0, 5);
+//     const opponentCharacters = characters.slice(5, 10);
+
+//     let userWins = 0;
+//     let opponentWins = 0;
+
+//     for (let i = 0; i < 5; i++) {
+//       if (userCharacters[i].attack > opponentCharacters[i].attack) {
+//         userWins++;
+//       } else {
+//         opponentWins++;
+//       }
+//     }
+
+//     let winner, loser;
+//     if (userWins >= 3) {
+//       winner = userCharacters[0].userId;
+//       loser = opponentCharacters[0].userId;
+//     } else {
+//       winner = opponentCharacters[0].userId;
+//       loser = userCharacters[0].userId;
+//     }
+
+//     await client.db("Assignment").collection("users").updateOne({ _id: winner }, { $inc: { money: 1000 } });
+//     await client.db("Assignment").collection("users").updateOne({ _id: loser }, { $inc: { money: 200 } });
+
+//     await client.db("Assignment").collection("fights").updateOne({ _id: req.params.fightId }, { $set: { status: 'completed' } });
+
+//     res.send(`Battle completed. Winner: ${winner}`);
+//   } catch (error) {
+//     res.status(500).send('Server error');
+//   }
+// })
+
+//function to calculate characters health after being attacked by opponent's characters
+
+//calculate health of character after being attacked by opponent's character and the character that health=0 loses
+
+
 
 
 /*
